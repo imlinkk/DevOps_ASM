@@ -1,18 +1,10 @@
 const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
 
-let mongoServer;
-
-jest.setTimeout(120000);
+// Use a dedicated test database (Docker MongoDB is already running on 27017)
+const TEST_DB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/product_test_db';
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const uri = mongoServer.getUri();
-  // directConnection required for mongodb-memory-server compatibility
-  await mongoose.connect(uri, {
-    directConnection: true,
-    serverSelectionTimeoutMS: 30000
-  });
+  await mongoose.connect(TEST_DB_URI);
 });
 
 afterEach(async () => {
@@ -32,8 +24,5 @@ afterAll(async () => {
     }
   } catch (_err) {
     // ignore cleanup errors
-  }
-  if (mongoServer) {
-    await mongoServer.stop({ doCleanup: true });
   }
 });
