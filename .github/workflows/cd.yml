@@ -1,0 +1,128 @@
+name: CD – Build, Push & Deploy
+
+on:
+  push:
+    branches: [main]
+
+# Prevent concurrent deployments
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/devops-node-api
+
+jobs:
+  # ─── Re-run CI checks before deploy ──────────────────────────
+  ci-gate:
+    name: CI Gate – Lint & Test
+    uses: ./.github/workflows/ci.yml
+
+  # ─── Build & Push Docker Image ────────────────────────────────
+  build-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: ci-gate
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract Docker image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: production
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+
+      - name: Trivy scan of built Docker image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "${{ env.IMAGE_NAME }}:latest"
+          format: "table"
+          severity: "HIGH,CRITICAL"
+          ignore-unfixed: true
+
+  # ─── Deploy to Render (Production) ───────────────────────────
+  deploy-production:
+    name: Deploy to Render (Production)
+    runs-on: ubuntu-latest
+    needs: build-push
+    environment:
+      name: production
+      url: ${{ secrets.RENDER_APP_URL }}
+    steps:
+      - name: Trigger Render Deploy Hook
+        run: |
+          echo "Deploying image ${{ needs.build-push.outputs.image-tag }} to production..."
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}")
+          echo "Render response: $RESPONSE"
+          if [ "$RESPONSE" != "200" ] && [ "$RESPONSE" != "201" ]; then
+            echo "Deploy hook failed with HTTP $RESPONSE"
+            exit 1
+          fi
+
+      - name: Wait for deployment to be healthy
+        run: |
+          echo "Waiting 60s for Render to pull and restart..."
+          sleep 60
+          MAX_RETRIES=10
+          RETRY=0
+          until curl -sf "${{ secrets.RENDER_APP_URL }}/health/ready" > /dev/null; do
+            RETRY=$((RETRY + 1))
+            if [ "$RETRY" -ge "$MAX_RETRIES" ]; then
+              echo "Health check failed after $MAX_RETRIES attempts – triggering rollback!"
+              exit 1
+            fi
+            echo "Attempt $RETRY/$MAX_RETRIES – not ready yet, retrying in 15s..."
+            sleep 15
+          done
+          echo "Deployment healthy!"
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "✅ Production deployment succeeded!"
+          echo "App URL: ${{ secrets.RENDER_APP_URL }}"
+          echo "Image: ${{ needs.build-push.outputs.image-tag }}"
+
+      - name: Notify deployment failure
+        if: failure()
+        run: |
+          echo "❌ Deployment FAILED. Manual rollback may be required."
+          echo "Previous image tag can be found in the build-push job output."
