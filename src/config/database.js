@@ -8,7 +8,8 @@ const connectDB = async (uri = MONGODB_URI) => {
     logger.info(`MongoDB Connected: ${conn.connection.host}`);
     return conn;
   } catch (error) {
-    logger.error(`MongoDB Connection Error: ${error.message}`);
+    const maskedUri = uri ? uri.replace(/:([^@]+)@/, ':****@') : '(empty)';
+    logger.error(`MongoDB Connection Error: ${error.message} [URI format: ${maskedUri.substring(0, 20)}...]`);
     if (process.env.NODE_ENV !== 'test') {
       process.exit(1);
     }
