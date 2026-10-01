@@ -5,11 +5,11 @@ FROM node:24-bookworm-slim AS builder
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json* .npmrc* ./
 
-# Prefer a reproducible install; fall back and print npm logs if it fails
+# Prefer reproducible ci install; fallback to npm install if lockfile has cross-platform discrepancies
 RUN npm ci --omit=dev --no-audit --no-fund \
-  || (echo "===== npm debug log =====" && cat /root/.npm/_logs/*debug*.log && exit 1)
+  || npm install --omit=dev --no-audit --no-fund
 
 COPY src ./src
 
