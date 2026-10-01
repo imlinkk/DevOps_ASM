@@ -1,12 +1,14 @@
 const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
 
-let mongoServer;
+const TEST_DB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/product_test_db';
 
 beforeAll(async () => {
   try {
-    mongoServer = await MongoMemoryServer.create();
-    await mongoose.connect(mongoServer.getUri());
+    await mongoose.connect(TEST_DB_URI, {
+      family: 4,
+      directConnection: true,
+      serverSelectionTimeoutMS: 10000
+    });
   } catch (error) {
     throw new Error(`Test MongoDB connection failed: ${error.message}`, { cause: error });
   }
@@ -29,9 +31,5 @@ afterAll(async () => {
     }
   } catch {
     // ignore cleanup errors
-  } finally {
-    if (mongoServer) {
-      await mongoServer.stop();
-    }
   }
 });
