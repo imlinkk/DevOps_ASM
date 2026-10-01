@@ -1,4 +1,4 @@
-﻿name: CI – Lint, Test & Security Audit
+name: CI – Lint, Test & Security Audit
 
 on:
   workflow_call:
@@ -25,7 +25,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           cache: "npm"
 
       - name: Install dependencies
@@ -50,7 +50,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           cache: "npm"
 
       - name: Install dependencies
@@ -98,7 +98,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           cache: "npm"
 
       - name: Install dependencies
@@ -127,7 +127,7 @@ jobs:
 
         env:
           NODE_ENV: test
-          MONGODB_URI: mongodb://127.0.0.1:${{ job.services.mongodb.ports[27017] }}/product_test_db?directConnection=true
+          MONGODB_URI: mongodb://127.0.0.1:${{ job.services.mongodb.ports[27017] }}/product_test_db
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
