@@ -1,6 +1,7 @@
 name: CI – Lint, Test & Security Audit
 
 on:
+  workflow_call:
   push:
     branches: ["**"]
   pull_request:
@@ -108,7 +109,7 @@ jobs:
         run: npm run test:coverage
         env:
           NODE_ENV: test
-          MONGODB_URI: mongodb://127.0.0.1:${{ job.services.mongodb.ports[27017] }}/product_test_db
+          MONGODB_URI: mongodb://127.0.0.1:${{ job.services.mongodb.ports[27017] }}/product_test_db?directConnection=true
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
