@@ -8,8 +8,8 @@
     "dev": "nodemon src/server.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test": "cross-env NODE_ENV=test MONGODB_URI=mongodb://127.0.0.1:27017/product_test_db jest --runInBand --detectOpenHandles --forceExit",
-    "test:coverage": "cross-env NODE_ENV=test MONGODB_URI=mongodb://127.0.0.1:27017/product_test_db jest --coverage --runInBand --detectOpenHandles --forceExit"
+    "test": "cross-env NODE_ENV=test jest --runInBand --detectOpenHandles --forceExit",
+    "test:coverage": "cross-env NODE_ENV=test jest --coverage --runInBand --detectOpenHandles --forceExit"
   },
   "repository": {
     "type": "git",
