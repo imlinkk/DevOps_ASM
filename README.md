@@ -7,7 +7,7 @@
 [![CI](https://github.com/imlinkk/DevOps_ASM/actions/workflows/ci.yml/badge.svg)](https://github.com/imlinkk/DevOps_ASM/actions/workflows/ci.yml)
 [![CD](https://github.com/imlinkk/DevOps_ASM/actions/workflows/cd.yml/badge.svg)](https://github.com/imlinkk/DevOps_ASM/actions/workflows/cd.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Node.js](https://img.shields.io/badge/Node.js-20-green.svg)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-24-green.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)](https://docs.docker.com/compose/)
 
 </div>
@@ -46,7 +46,7 @@ A **Product Management REST API** built with Node.js/Express demonstrating a ful
 
 | Layer | Technology |
 |---|---|
-| Runtime | Node.js 20 (Alpine) |
+| Runtime | Node.js 24 (Alpine) |
 | Framework | Express.js 5 |
 | Database | MongoDB 7 + Mongoose 9 |
 | Logging | Winston + Morgan |
