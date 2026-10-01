@@ -1,15 +1,12 @@
 const mongoose = require('mongoose');
+const { MongoMemoryServer } = require('mongodb-memory-server');
 
-// Use a dedicated test database (Docker MongoDB is already running on 27017)
-const TEST_DB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/product_test_db';
+let mongoServer;
 
 beforeAll(async () => {
   try {
-    await mongoose.connect(TEST_DB_URI, {
-      family: 4,
-      directConnection: true,
-      serverSelectionTimeoutMS: 10000
-    });
+    mongoServer = await MongoMemoryServer.create();
+    await mongoose.connect(mongoServer.getUri());
   } catch (error) {
     throw new Error(`Test MongoDB connection failed: ${error.message}`, { cause: error });
   }
@@ -32,5 +29,9 @@ afterAll(async () => {
     }
   } catch {
     // ignore cleanup errors
+  } finally {
+    if (mongoServer) {
+      await mongoServer.stop();
+    }
   }
 });
