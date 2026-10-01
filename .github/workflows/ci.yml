@@ -1,17 +1,23 @@
-name: CI – Lint, Test & Security Audit
+﻿name: CI – Lint, Test & Security Audit
 
 on:
   workflow_call:
+
   push:
     branches: ["**"]
+
   pull_request:
     branches: [main, develop]
 
 jobs:
-  # ─── Lint Job ────────────────────────────────────────────────
+
+  # ─────────────────────────────────────────
+  # LINT
+  # ─────────────────────────────────────────
   lint:
     name: ESLint Code Quality
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
@@ -19,7 +25,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          node-version: "22"
           cache: "npm"
 
       - name: Install dependencies
@@ -28,11 +34,15 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
-  # ─── Security Audit Job ───────────────────────────────────────
+
+  # ─────────────────────────────────────────
+  # SECURITY
+  # ─────────────────────────────────────────
   security:
     name: Security Audit (npm audit + Trivy)
     runs-on: ubuntu-latest
     needs: lint
+
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
@@ -40,7 +50,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          node-version: "22"
           cache: "npm"
 
       - name: Install dependencies
@@ -59,18 +69,22 @@ jobs:
           severity: "HIGH,CRITICAL"
           ignore-unfixed: true
 
-  # ─── Test Job (with MongoDB service) ──────────────────────────
+
+  # ─────────────────────────────────────────
+  # TEST
+  # ─────────────────────────────────────────
   test:
     name: Jest Unit & Integration Tests
     runs-on: ubuntu-latest
     needs: lint
 
-    # Spin up a real MongoDB container for tests
     services:
       mongodb:
-        image: mongo:8
+        image: mongo:7
+
         ports:
           - 27017/tcp
+
         options: >-
           --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
           --health-interval 10s
@@ -84,7 +98,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          node-version: "22"
           cache: "npm"
 
       - name: Install dependencies
@@ -93,27 +107,33 @@ jobs:
       - name: Verify MongoDB test service
         env:
           MONGODB_PORT: ${{ job.services.mongodb.ports[27017] }}
+
         run: |
           for attempt in {1..30}; do
             if timeout 1 bash -c "</dev/tcp/127.0.0.1/$MONGODB_PORT"; then
               echo "MongoDB is accepting connections."
               exit 0
             fi
+
             echo "Waiting for MongoDB ($attempt/30)..."
             sleep 2
           done
+
           echo "MongoDB test service is unavailable on 127.0.0.1:$MONGODB_PORT."
           exit 1
 
       - name: Run tests with coverage
         run: npm run test:coverage
+
         env:
           NODE_ENV: test
           MONGODB_URI: mongodb://127.0.0.1:${{ job.services.mongodb.ports[27017] }}/product_test_db?directConnection=true
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
+
         if: always()
+
         with:
           name: coverage-report
           path: coverage/
