@@ -32,7 +32,7 @@ services:
 
   # ─── MongoDB Database ─────────────────────────────────────────
   mongodb:
-    image: mongo:7.0.14
+    image: mongo:8
     container_name: devops_mongodb
     restart: unless-stopped
     ports:
