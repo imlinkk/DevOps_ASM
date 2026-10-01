@@ -68,7 +68,7 @@ jobs:
     # Spin up a real MongoDB container for tests
     services:
       mongodb:
-        image: mongo:8
+        image: mongo:8.0
         ports:
           - 27017/tcp
         options: >-
