@@ -46,7 +46,7 @@ A **Product Management REST API** built with Node.js/Express demonstrating a ful
 
 | Layer | Technology |
 |---|---|
-| Runtime | Node.js 24 (Alpine) |
+| Runtime | Node.js 24 (Debian slim) |
 | Framework | Express.js 5 |
 | Database | MongoDB 7 + Mongoose 9 |
 | Logging | Winston + Morgan |

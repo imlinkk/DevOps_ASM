@@ -1,25 +1,29 @@
 # =============================================================
-# Stage 1 – Builder: install production dependencies
+# Stage 1 – Builder
 # =============================================================
-FROM node:24-alpine AS builder
+FROM node:24-bookworm-slim AS builder
 
 WORKDIR /app
 
-COPY package.json package-lock.json .npmrc ./
+COPY package.json package-lock.json ./
 
-# npm 11 (Node 24) matches the repo lockfile generated locally
-RUN npm ci --omit=dev --no-audit --no-fund
+# Prefer a reproducible install; fall back and print npm logs if it fails
+RUN npm ci --omit=dev --no-audit --no-fund \
+  || (echo "===== npm debug log =====" && cat /root/.npm/_logs/*debug*.log && exit 1)
 
 COPY src ./src
 
 # =============================================================
-# Stage 2 – Production: slim final image
+# Stage 2 – Production
 # =============================================================
-FROM node:24-alpine AS production
+FROM node:24-bookworm-slim AS production
 
-RUN apk add --no-cache dumb-init wget
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends dumb-init wget \
+  && rm -rf /var/lib/apt/lists/*
 
-RUN addgroup -g 1001 -S nodejs && adduser -S nodeapp -u 1001 -G nodejs
+RUN groupadd -g 1001 nodejs \
+  && useradd -r -u 1001 -g nodejs nodeapp
 
 WORKDIR /app
 
